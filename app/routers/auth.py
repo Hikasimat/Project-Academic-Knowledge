@@ -30,6 +30,11 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     Public self-registration is strictly disallowed.
     """
     user = db.query(User).filter(User.email == payload.email.lower().strip()).first()
+    if not user:
+        from app.cli import seed_admin_if_needed
+        seed_admin_if_needed(db)
+        user = db.query(User).filter(User.email == payload.email.lower().strip()).first()
+
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

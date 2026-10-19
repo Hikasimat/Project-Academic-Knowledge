@@ -35,7 +35,13 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        if "https://project-academic-knowledge.vercel.app" not in origins:
+            origins.append("https://project-academic-knowledge.vercel.app")
+        vercel_url = os.environ.get("VERCEL_URL")
+        if vercel_url:
+            origins.append(f"https://{vercel_url}")
+        return list(set(origins))
 
 settings = Settings()
 

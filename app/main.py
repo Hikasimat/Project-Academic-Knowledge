@@ -8,15 +8,16 @@ from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.routers import auth, admin, learning, assessment, certificates
-from app.cli import seed_courses_if_needed
+from app.cli import seed_courses_if_needed, seed_admin_if_needed
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: ensure tables exist and default course tracks/steps are seeded
+    # Startup: ensure tables exist and default course tracks/steps/admins are seeded
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         seed_courses_if_needed(db)
+        seed_admin_if_needed(db)
     finally:
         db.close()
     yield

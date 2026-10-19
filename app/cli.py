@@ -72,6 +72,39 @@ def seed_courses_if_needed(db: Session):
                 s.section_title = step.get("section_title", s.section_title or "General")
                 s.target_section = step.get("target_section", s.target_section)
     db.commit()
+ 
+def seed_admin_if_needed(db: Session):
+    """Ensure default administrator accounts exist (vital for serverless /tmp databases like Vercel)."""
+    default_admins = [
+        ("admin@plusuae.com", "System Administrator", os.environ.get("INITIAL_ADMIN_PASSWORD", "AdminSecurePass2026!")),
+        ("mohanrajvmvm221023@gmail.com", "Mohan Raj", os.environ.get("INITIAL_ADMIN_PASSWORD", "AdminSecurePass2026!")),
+        ("mohanrajrvrm221023@gmail.com", "Mohan Raj", os.environ.get("INITIAL_ADMIN_PASSWORD", "AdminSecurePass2026!")),
+    ]
+    env_admin_email = os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or os.environ.get("INITIAL_ADMIN_EMAIL")
+    env_admin_pass = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or os.environ.get("INITIAL_ADMIN_PASSWORD")
+    if env_admin_email and env_admin_pass:
+        default_admins.append((env_admin_email, "Administrator", env_admin_pass))
+
+    for email, name, pwd in default_admins:
+        email_clean = email.lower().strip()
+        user = db.query(User).filter(User.email == email_clean).first()
+        if not user:
+            admin = User(
+                email=email_clean,
+                full_name=name,
+                hashed_password=get_password_hash(pwd),
+                role="admin",
+                is_active=True
+            )
+            db.add(admin)
+            db.flush()
+            audit = AuditLog(
+                user_id=admin.id,
+                action="AUTO_BOOTSTRAP_ADMIN",
+                details=f"Admin account {email_clean} automatically bootstrapped"
+            )
+            db.add(audit)
+    db.commit()
 
 def create_admin(email: str, full_name: str, password: str = None):
     """Create or update an administrator account securely."""
