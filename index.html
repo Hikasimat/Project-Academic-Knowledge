@@ -2057,6 +2057,14 @@ function switchAdminTab(tabName) {
   });
 }
 
+function getAppBaseUrl() {
+  const origin = window.location.origin;
+  if (origin.includes('.vercel.app') && origin !== 'https://project-academic-knowledge.vercel.app') {
+    return 'https://project-academic-knowledge.vercel.app';
+  }
+  return origin;
+}
+
 async function adminCreateLearner() {
   const fullName = $('learnerFullName').value.trim();
   const email = $('learnerEmail').value.trim();
@@ -2075,7 +2083,7 @@ async function adminCreateLearner() {
   });
 
   if (ok && data) {
-    const fullInviteUrl = window.location.origin + data.invitation_url;
+    const fullInviteUrl = getAppBaseUrl() + data.invitation_url;
     resDiv.innerHTML = `
       <b>Learner Account Created!</b><br>
       Provide this single-use activation invitation to the learner (expires in 72 hours):<br>
@@ -2131,7 +2139,7 @@ async function loadAdminLearners() {
       : '<span class="muted">—</span>';
 
     const inviteBtn = l.invitation_url
-      ? `<button onclick="copyRawInvite('${window.location.origin + l.invitation_url}')" style="padding:4px 8px;font-size:11px">Copy Invite</button>`
+      ? `<button onclick="copyRawInvite('${getAppBaseUrl() + l.invitation_url}')" style="padding:4px 8px;font-size:11px">Copy Invite</button>`
       : `<button onclick="adminResetInvite(${l.id})" style="padding:4px 8px;font-size:11px">Reset Invite</button>`;
 
     const toggleStatusBtn = l.is_active
@@ -2182,7 +2190,7 @@ async function adminResetInvite(learnerId) {
   });
 
   if (ok && data) {
-    const fullUrl = window.location.origin + data.invitation_url;
+    const fullUrl = getAppBaseUrl() + data.invitation_url;
     navigator.clipboard?.writeText(fullUrl).then(() => {
       alert('Fresh single-use invitation generated and copied to clipboard!\n' + fullUrl);
     });
