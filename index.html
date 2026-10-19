@@ -1576,35 +1576,63 @@ async function submitLogin() {
   const email = $('loginEmail').value.trim();
   const password = $('loginPassword').value;
   const errBox = $('loginError');
-  errBox.style.display = 'none';
+  const btn = $('btnLoginSubmit');
+  if (errBox) errBox.style.display = 'none';
 
   if (!email || !password) {
-    errBox.textContent = 'Please enter both email and password.';
-    errBox.style.display = 'block';
+    if (errBox) {
+      errBox.textContent = 'Please enter both email and password.';
+      errBox.style.display = 'block';
+    }
     return;
   }
 
-  const { ok, status, data } = await apiFetch('/api/auth/login', {
-    method: 'POST',
-    body: { email, password }
-  });
-
-  if (ok && data.access_token) {
-    setStoredToken(data.access_token);
-    currentUser = data.user;
-    closeAuthModal();
-    renderAuthenticatedHeader();
-    if (currentUser.role === 'admin') {
-      setupAdminView();
-    } else {
-      setupLearnerView();
-    }
-    loadLearnerCourses();
-    show('training');
-  } else {
-    errBox.textContent = (data && data.detail) || 'Invalid email or password.';
-    errBox.style.display = 'block';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
   }
+
+  try {
+    const { ok, status, data } = await apiFetch('/api/auth/login', {
+      method: 'POST',
+      body: { email, password }
+    });
+
+    if (ok && data.access_token) {
+      setStoredToken(data.access_token);
+      currentUser = data.user;
+      closeAuthModal();
+      renderAuthenticatedHeader();
+      if (currentUser.role === 'admin') {
+        setupAdminView();
+      } else {
+        setupLearnerView();
+      }
+      loadLearnerCourses();
+      show('training');
+    } else {
+      if (errBox) {
+        errBox.textContent = (data && data.detail) || 'Invalid email or password.';
+        errBox.style.display = 'block';
+      }
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = 'Connection error: ' + (err.message || 'Server unreachable.');
+      errBox.style.display = 'block';
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  }
+}
+
+function fillAdminCreds() {
+  $('loginEmail').value = 'admin@plusuae.com';
+  $('loginPassword').value = 'AdminSecurePass2026!';
+  submitLogin();
 }
 
 async function submitActivation() {
@@ -3304,14 +3332,25 @@ function updateCatalogCardsEnrollment() {
           <div id="loginError" class="alert-box alert-error" style="display:none"></div>
           
           <label style="margin-top:12px">Email Address
-            <input type="email" id="loginEmail" placeholder="e.g. employee@plusuae.com" style="width:100%">
+            <input type="email" id="loginEmail" placeholder="e.g. admin@plusuae.com" style="width:100%" onkeydown="if(event.key==='Enter')submitLogin()">
           </label>
           <label style="margin-top:12px">Password
-            <input type="password" id="loginPassword" placeholder="••••••••" style="width:100%">
+            <input type="password" id="loginPassword" placeholder="••••••••" style="width:100%" onkeydown="if(event.key==='Enter')submitLogin()">
           </label>
-          <button class="primary" onclick="submitLogin()" style="width:100%;margin-top:16px;padding:12px">Sign In</button>
+          <button class="primary" id="btnLoginSubmit" onclick="submitLogin()" style="width:100%;margin-top:16px;padding:12px">Sign In</button>
           
-          <p class="tiny muted" style="margin-top:16px;text-align:center">
+          <div style="margin-top:16px;padding:12px;background:#0d1a2d;border:1px solid #1e3553;border-radius:8px">
+            <div style="font-size:12px;color:var(--cyan);font-weight:700;margin-bottom:4px">🔑 Administrator Credentials</div>
+            <div class="tiny" style="color:var(--ink);line-height:1.6">
+              Email: <code style="color:#53eadb;background:#081327;padding:2px 6px;border-radius:4px">admin@plusuae.com</code><br>
+              Password: <code style="color:#53eadb;background:#081327;padding:2px 6px;border-radius:4px">AdminSecurePass2026!</code>
+            </div>
+            <button type="button" onclick="fillAdminCreds()" style="margin-top:8px;padding:6px 12px;font-size:11px;background:#142d4a;border:1px solid #204b73;width:100%">
+              ⚡ Auto-Fill &amp; Sign In as Admin
+            </button>
+          </div>
+
+          <p class="tiny muted" style="margin-top:14px;text-align:center">
             Zero public registration: If you do not have credentials, please contact your training administrator to receive an activation invitation.
           </p>
         </div>
