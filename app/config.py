@@ -27,8 +27,10 @@ class Settings(BaseSettings):
     @property
     def effective_database_url(self) -> str:
         url = self.DATABASE_URL
-        if os.environ.get("VERCEL") and not os.environ.get("DATABASE_URL"):
-            url = "sqlite:////tmp/sales_academy.db"
+        is_vercel = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
+        if is_vercel:
+            if not url or url.startswith("sqlite"):
+                url = "sqlite:////tmp/sales_academy.db"
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
         return url
